@@ -1,0 +1,5 @@
+# Kodowanie
+python program.py encode Z.txt W.txt
+
+# Dekodowanie
+python program.py decode W.txt Z_decoded.txt
