@@ -31,6 +31,39 @@ python3 main.py
 ```
 Program automatycznie przeprowadzi serię testów i wyświetli wyniki.
 
+### Przykład użycia i wyjaśnienie
+
+Fragment kodu z `main.py`:
+```python
+test_cases = [
+    (2, 10, 10),   # (liczba stacji, długość łącza, liczba kroków)
+    (3, 20, 15),
+    (4, 30, 20),
+    (5, 15, 12),
+]
+for n, l, s in test_cases:
+    run_test(n, l, s)
+```
+- `(2, 10, 10)`  
+  - **2** – liczba stacji w symulacji  
+  - **10** – długość łącza (liczba komórek tablicy reprezentującej medium)  
+  - **10** – liczba kroków symulacji (ile razy zostanie zaktualizowany stan sieci)
+
+Wywołanie:
+```
+python3 main.py
+```
+spowoduje uruchomienie czterech testów z powyższymi parametrami. Każdy test wypisze na ekranie wyniki symulacji dla danej konfiguracji.
+
+Przykładowy fragment wyjścia:
+```
+=== Test: stacje=2, dlugosc=10, kroki=10 ===
+[tu pojawi się wynik działania csma_cd.py dla tych parametrów]
+```
+- **stacje=2** – liczba stacji w tym teście
+- **dlugosc=10** – długość łącza
+- **kroki=10** – liczba kroków symulacji
+
 ## Podsumowanie
 
 Rozwiązanie umożliwia łatwe eksperymentowanie z parametrami symulacji CSMA/CD oraz analizę zachowania sieci Ethernet w różnych warunkach. Dzięki modularnej budowie i automatyzacji testów, kod jest wygodny do dalszych modyfikacji i rozbudowy.
