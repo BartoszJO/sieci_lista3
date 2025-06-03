@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Program ramkowania z zasadą "rozpychania bitów" i weryfikacją CRC
+program.py - Kodowanie i dekodowanie ramek z sumą kontrolną CRC, bit stuffingiem i flagami.
+Program realizuje ramkowanie, rozpychanie bitów, dodawanie i weryfikację CRC oraz obsługę plików wejściowych/wyjściowych.
 """
 
 import sys
-import os
 
 class FrameProcessor:
     def __init__(self):
-        # Wzorzec ramki - flaga początkowa i końcowa
-        self.FLAG = "01111110"
-        # Wielomian CRC-8: x^8 + x^2 + x^1 + 1 = 100000111
-        self.CRC_POLY = "100000111"
-        self.CRC_LENGTH = 8
-    
+        # Ustawienia długości ramki i CRC
+        self.FRAME_LENGTH = 64  # liczba bitów danych w ramce
+        self.CRC_POLY = "100000111"  # wielomian CRC-8 (x^8 + x^2 + x + 1)
+        self.CRC_LENGTH = len(self.CRC_POLY) - 1
+        self.FLAG = "01111110"  # flaga początku/końca ramki
+
     def calculate_crc(self, data_bits):
         """
-        Oblicza CRC dla podanych bitów danych
+        Oblicza sumę kontrolną CRC-8 dla podanego ciągu bitów (jako string '0'/'1').
+        Zwraca resztę z dzielenia modulo 2 (jako string bitów).
         """
         # Dodajemy zera na końcu (długość wielomianu - 1)
         dividend = data_bits + "0" * (len(self.CRC_POLY) - 1)
@@ -39,15 +40,27 @@ class FrameProcessor:
         remainder = ''.join(dividend_list[-(len(divisor_list) - 1):])
         return remainder
     
-    def bit_stuffing(self, data):
+    def verify_crc(self, data_with_crc):
         """
-        Implementuje zasadę rozpychania bitów
-        Po pięciu kolejnych jedynkach wstawia zero
+        Weryfikuje poprawność CRC dla danych z dołączonym polem CRC.
+        Zwraca True, jeśli suma kontrolna jest poprawna.
+        """
+        if len(data_with_crc) < self.CRC_LENGTH:
+            return False
+        
+        # Oblicz CRC dla całych danych (z dołączonym CRC powinno dać 0)
+        remainder = self.calculate_crc(data_with_crc)
+        return remainder == "0" * self.CRC_LENGTH
+    
+    def bit_stuff(self, bits):
+        """
+        Realizuje rozpychanie bitów: po każdych 5 jedynkach wstawia zero.
+        Zwraca nowy ciąg bitów jako string.
         """
         result = ""
         count_ones = 0
         
-        for bit in data:
+        for bit in bits:
             result += bit
             if bit == '1':
                 count_ones += 1
@@ -59,23 +72,24 @@ class FrameProcessor:
         
         return result
     
-    def bit_destuffing(self, data):
+    def bit_unstuff(self, bits):
         """
-        Usuwa bity wstawione podczas bit stuffing
+        Usuwa rozpychanie bitów: po każdych 5 jedynkach usuwa następujące zero.
+        Zwraca odtworzony ciąg bitów jako string.
         """
         result = ""
         count_ones = 0
         i = 0
         
-        while i < len(data):
-            bit = data[i]
+        while i < len(bits):
+            bit = bits[i]
             result += bit
             
             if bit == '1':
                 count_ones += 1
                 if count_ones == 5:
                     # Następny bit powinien być zerem do usunięcia
-                    if i + 1 < len(data) and data[i + 1] == '0':
+                    if i + 1 < len(bits) and bits[i + 1] == '0':
                         i += 1  # Pomijamy wstawione zero
                     count_ones = 0
             else:
@@ -99,16 +113,17 @@ class FrameProcessor:
         data_with_crc = data_chunk + crc
         
         # 3. Zastosuj bit stuffing
-        stuffed_data = self.bit_stuffing(data_with_crc)
+        stuffed_data = self.bit_stuff(data_with_crc)
         
         # 4. Dodaj flagi
         frame = self.FLAG + stuffed_data + self.FLAG
         
         return frame
     
-    def encode_file(self, input_file, output_file, chunk_size=64):
+    def encode_file(self, input_file, output_file):
         """
-        Koduje plik źródłowy do ramek
+        Koduje plik wejściowy do ramek z CRC, rozpychaniem bitów i flagami.
+        Zapisuje wynik do pliku wyjściowego (każda ramka w osobnej linii).
         """
         try:
             with open(input_file, 'r', encoding='utf-8') as f:
@@ -121,8 +136,8 @@ class FrameProcessor:
             frames = []
             
             # Podziel dane na fragmenty
-            for i in range(0, len(data), chunk_size):
-                chunk = data[i:i+chunk_size]
+            for i in range(0, len(data), self.FRAME_LENGTH):
+                chunk = data[i:i+self.FRAME_LENGTH]
                 frame = self.create_frame(chunk)
                 frames.append(frame)
             
@@ -139,17 +154,6 @@ class FrameProcessor:
         except Exception as e:
             print(f"Błąd podczas kodowania: {e}")
     
-    def verify_crc(self, data_with_crc):
-        """
-        Weryfikuje poprawność CRC
-        """
-        if len(data_with_crc) < self.CRC_LENGTH:
-            return False
-        
-        # Oblicz CRC dla całych danych (z dołączonym CRC powinno dać 0)
-        remainder = self.calculate_crc(data_with_crc)
-        return remainder == "0" * self.CRC_LENGTH
-    
     def extract_frame_data(self, frame):
         """
         Wyciąga dane z ramki i weryfikuje je
@@ -165,7 +169,7 @@ class FrameProcessor:
         
         # Usuń bit stuffing
         try:
-            destuffed = self.bit_destuffing(content)
+            destuffed = self.bit_unstuff(content)
         except Exception as e:
             return None, f"Błąd podczas usuwania bit stuffing: {e}"
         
@@ -182,7 +186,8 @@ class FrameProcessor:
     
     def decode_file(self, input_file, output_file):
         """
-        Dekoduje plik z ramkami
+        Dekoduje plik ramek: usuwa flagi, rozpychanie bitów, weryfikuje CRC.
+        Zapisuje poprawne dane do pliku wyjściowego.
         """
         try:
             with open(input_file, 'r', encoding='utf-8') as f:
@@ -222,41 +227,20 @@ class FrameProcessor:
         except Exception as e:
             print(f"Błąd podczas dekodowania: {e}")
 
-def main():
-    processor = FrameProcessor()
-    
-    if len(sys.argv) < 2:
-        print("Użycie:")
-        print(f"  {sys.argv[0]} encode <plik_źródłowy> <plik_wynikowy>")
-        print(f"  {sys.argv[0]} decode <plik_ramek> <plik_wynikowy>")
-        print("\nPrzykłady:")
-        print(f"  {sys.argv[0]} encode Z.txt W.txt")
-        print(f"  {sys.argv[0]} decode W.txt Z_decoded.txt")
-        return
-    
-    command = sys.argv[1].lower()
-    
-    if command == "encode":
-        if len(sys.argv) != 4:
-            print("Błąd: Kodowanie wymaga dwóch argumentów - plik źródłowy i plik wynikowy")
-            return
-        
-        input_file = sys.argv[2]
-        output_file = sys.argv[3]
-        processor.encode_file(input_file, output_file)
-        
-    elif command == "decode":
-        if len(sys.argv) != 4:
-            print("Błąd: Dekodowanie wymaga dwóch argumentów - plik ramek i plik wynikowy")
-            return
-        
-        input_file = sys.argv[2]
-        output_file = sys.argv[3]
-        processor.decode_file(input_file, output_file)
-        
-    else:
-        print(f"Nieznana komenda: {command}")
-        print("Dostępne komendy: encode, decode")
-
 if __name__ == "__main__":
-    main()
+    # Obsługa argumentów wiersza poleceń
+    if len(sys.argv) < 4:
+        print("Użycie: python3 program.py encode|decode <plik_wejściowy> <plik_wyjściowy>")
+        sys.exit(1)
+    mode = sys.argv[1]
+    input_file = sys.argv[2]
+    output_file = sys.argv[3]
+    processor = FrameProcessor()
+    if mode == "encode":
+        processor.encode_file(input_file, output_file)
+        print(f"Zakodowano plik {input_file} do {output_file}")
+    elif mode == "decode":
+        processor.decode_file(input_file, output_file)
+        print(f"Zdekodowano plik {input_file} do {output_file}")
+    else:
+        print("Nieznany tryb. Użyj 'encode' lub 'decode'.")

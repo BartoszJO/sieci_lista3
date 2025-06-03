@@ -1,5 +1,13 @@
-# Kodowanie
-python program.py encode Z.txt W.txt
+"""
+Plik sposoby_uzycia.txt
+Przykłady użycia programu do kodowania i dekodowania ramek (zadanie 1)
 
-# Dekodowanie
-python program.py decode W.txt Z_decoded.txt
+Kodowanie:
+python3 program.py encode <plik_wejściowy> <plik_wyjściowy>
+
+Dekodowanie:
+python3 program.py decode <plik_wejściowy> <plik_wyjściowy>
+
+Testowanie:
+python3 test_frameprocessor.py
+"""

@@ -1,3 +1,21 @@
+"""
+README - zadanie 2
+Symulacja metody dostępu CSMA/CD (Carrier Sense Multiple Access with Collision Detection)
+
+Pliki:
+- csma_cd.py      - główny plik z kodem symulacji
+- main.py         - uruchamianie zestawu testów
+- csma_cd.py.md   - dokumentacja kodu
+
+Opis działania:
+Symulacja przedstawia działanie kilku stacji podłączonych do wspólnego łącza. Stacje próbują nadawać z określonym prawdopodobieństwem. Sygnały propagują się po medium, mogą wystąpić kolizje. Stacje po kolizji przechodzą w stan backoff.
+
+Uruchomienie:
+python3 main.py
+
+Parametry testów można zmieniać w pliku main.py.
+"""
+
 # Symulacja metody CSMA/CD w Ethernet
 
 ## Opis zadania

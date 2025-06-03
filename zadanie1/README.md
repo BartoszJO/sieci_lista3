@@ -1,3 +1,23 @@
+"""
+README - zadanie 1
+Kodowanie i dekodowanie ramek z sumą kontrolną CRC, bit stuffingiem i flagami.
+
+Pliki:
+- program.py         - główny plik z kodem
+- test_frameprocessor.py - testowanie kodowania i dekodowania
+- sposoby_uzycia.txt - przykłady użycia
+
+Opis działania:
+Program koduje plik wejściowy do ramek z CRC, bit stuffingiem i flagami, a następnie umożliwia dekodowanie z powrotem do oryginalnych danych.
+
+Uruchomienie:
+python3 program.py encode <plik_wejściowy> <plik_wyjściowy>
+python3 program.py decode <plik_wejściowy> <plik_wyjściowy>
+
+Testowanie:
+python3 test_frameprocessor.py
+"""
+
 # Ramkowanie z rozpychaniem bitów i weryfikacją CRC
 
 ## Opis zadania
