@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Program ramkowania z zasadą "rozpychania bitów" i weryfikacją CRC
-Autor: Assistant
 """
 
 import sys
