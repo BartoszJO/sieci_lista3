@@ -26,46 +26,60 @@ class Station:
 class Medium:
     def __init__(self, length):
         self.length = length
-        self.cells = ['.'] * length  # '.' = cisza, 'A','B',... = sygnał stacji, 'X' = kolizja
-        self.owners = [set() for _ in range(length)]  # lista zbiorów: które stacje mają sygnał w danej komórce
+        self.cells = ['.'] * length
+        self.owners = [set() for _ in range(length)]
+        self.wavefronts = []  # lista aktywnych czoł sygnałów: (pos, symbol, kierunek)
 
     def clear(self):
         self.cells = ['.'] * self.length
         self.owners = [set() for _ in range(self.length)]
+        self.wavefronts = []
 
-    def propagate(self, signals):
-        """
-        Propagacja sygnałów stacji po medium.
-        signals: lista (pozycja, symbol_stacji)
-        Najpierw stacje nadające oznaczają swoje pozycje, potem sygnał rozprzestrzenia się na sąsiednie komórki.
-        Kolizje ('X') powstają, gdy w jednej komórce pojawi się sygnał więcej niż jednej stacji.
-        """
-        # Oznacz źródła sygnału
-        fresh_sources = set()
-        for pos, symbol in signals:
+    def start_transmission(self, stations):
+        # Dodaj nowe czoła sygnałów dla stacji, które zaczynają nadawać
+        for s in stations:
+            if s.state == 'sending':
+                self.wavefronts.append((s.pos, chr(65+s.id), 0))  # 0 = źródło
+
+    def propagate(self):
+        # Nowa lista czoł sygnałów na kolejny krok
+        new_wavefronts = []
+        # Zaznacz sygnały w medium
+        for pos, symbol, _ in self.wavefronts:
             if 0 <= pos < self.length:
-                if self.cells[pos] == '.' or self.cells[pos] == symbol:
-                    self.cells[pos] = symbol
-                    self.owners[pos].add(symbol)
-                    fresh_sources.add((pos, symbol))
-                else:
-                    self.cells[pos] = 'X'
-                    self.owners[pos].add(symbol)
-        # Rozprzestrzenianie sygnału na sąsiednie komórki
-        new_signals = []
-        for i, c in enumerate(self.cells):
-            if c not in ['.', 'X']:
-                if i > 0 and self.cells[i-1] == '.':
-                    new_signals.append((i-1, c))
-                if i < self.length-1 and self.cells[i+1] == '.':
-                    new_signals.append((i+1, c))
-        for pos, symbol in new_signals:
-            if self.cells[pos] == '.' or self.cells[pos] == symbol:
-                self.cells[pos] = symbol
                 self.owners[pos].add(symbol)
+        # Wykryj kolizje i ustaw symbole w medium
+        for i in range(self.length):
+            if len(self.owners[i]) > 1:
+                self.cells[i] = 'X'
+            elif len(self.owners[i]) == 1:
+                self.cells[i] = list(self.owners[i])[0]
             else:
-                self.cells[pos] = 'X'
-                self.owners[pos].add(symbol)
+                self.cells[i] = '.'
+        # Rozszerz czoła sygnałów na sąsiednie komórki
+        for pos, symbol, direction in self.wavefronts:
+            if direction == 0:
+                # Rozchodzenie się od źródła w obie strony
+                if pos > 0:
+                    new_wavefronts.append((pos-1, symbol, -1))
+                if pos < self.length-1:
+                    new_wavefronts.append((pos+1, symbol, 1))
+            elif direction == -1 and pos > 0:
+                new_wavefronts.append((pos-1, symbol, -1))
+            elif direction == 1 and pos < self.length-1:
+                new_wavefronts.append((pos+1, symbol, 1))
+        self.wavefronts = new_wavefronts
+
+    def remove_symbol(self, symbol):
+        # Usuwa sygnał danej stacji z medium i czoła sygnałów
+        self.wavefronts = [w for w in self.wavefronts if w[1] != symbol]
+        for i in range(self.length):
+            if symbol in self.owners[i]:
+                self.owners[i].discard(symbol)
+                if not self.owners[i]:
+                    self.cells[i] = '.'
+                elif self.cells[i] == 'X' and len(self.owners[i]) == 1:
+                    self.cells[i] = list(self.owners[i])[0]
 
     def __str__(self):
         return ''.join(self.cells)
@@ -100,49 +114,32 @@ def main():
     stations = [Station(pos, i) for i, pos in enumerate(positions)]
     medium = Medium(length)
     for step in range(steps):
-        signals = []
-        # Faza 1: decyzja o nadawaniu i zbieranie sygnałów (bez aktualizacji backoff)
+        # Faza 1: decyzja o nadawaniu
         for s in stations:
             if s.state == 'backoff':
-                continue  # Stacja w backoff nie nadaje
+                continue
             if s.state == 'idle' and random.random() < 0.2:
                 s.state = 'sending'
-                s.tx_timer = 5  # transmisja trwa 5 kroków
-            if s.state == 'sending':
-                # Sygnał stacji pojawia się na jej pozycji
-                signals.append((s.pos, chr(65+s.id)))
-        # Faza 2: propagacja sygnałów po medium
-        medium.propagate(signals)
-        # Faza 3: wykrywanie kolizji
-        # Znajdź wszystkie pozycje z kolizją
-        collision_positions = set(i for i, c in enumerate(medium.cells) if c == 'X')
-        # Zbierz symbole stacji, które brały udział w kolizji
-        collided_symbols = set()
-        for pos in collision_positions:
-            collided_symbols.update(medium.owners[pos])
+                s.tx_timer = 5
+        # Faza 2: rozpoczęcie transmisji (dodanie nowych czoł sygnałów)
+        medium.start_transmission(stations)
+        # Faza 3: propagacja sygnałów o jeden krok
+        medium.propagate()
+        # Faza 4: wykrywanie kolizji
+        collision_symbols = set()
+        for i in range(medium.length):
+            if medium.cells[i] == 'X':
+                collision_symbols.update(medium.owners[i])
         for s in stations:
-            if s.state == 'sending':
-                if chr(65+s.id) in collided_symbols:
-                    print(f"  [!] Kolizja: stacja {chr(65+s.id)} wykryła kolizję (jej sygnał brał udział) i przechodzi do backoff.")
-                    s.state = 'backoff'
-                    s.backoff = random.randint(1, 5)
-                    s.tx_timer = 0
-        # Po obsłudze kolizji: wyczyść sygnały stacji, które przeszły do backoff
-        for s in stations:
-            if s.state == 'backoff':
-                symbol = chr(65+s.id)
-                for i in range(medium.length):
-                    if symbol in medium.owners[i]:
-                        medium.owners[i].discard(symbol)
-                        # Jeśli po usunięciu nie ma już właścicieli, wyczyść komórkę
-                        if not medium.owners[i]:
-                            medium.cells[i] = '.'
-                        # Jeśli była kolizja, ale już tylko jeden właściciel, przywróć symbol
-                        elif medium.cells[i] == 'X' and len(medium.owners[i]) == 1:
-                            medium.cells[i] = list(medium.owners[i])[0]
-        # Faza 4: wypisanie stanu przed aktualizacją liczników backoff i tx_timer
+            if s.state == 'sending' and chr(65+s.id) in collision_symbols:
+                print(f"  [!] Kolizja: stacja {chr(65+s.id)} wykryła kolizję (jej sygnał brał udział) i przechodzi do backoff.")
+                s.state = 'backoff'
+                s.backoff = random.randint(1, 5)
+                s.tx_timer = 0
+                medium.remove_symbol(chr(65+s.id))
+        # Faza 5: wypisanie stanu
         print_state(step, medium, stations)
-        # Faza 5: aktualizacja liczników backoff i tx_timer
+        # Faza 6: aktualizacja liczników
         for s in stations:
             if s.state == 'backoff':
                 s.backoff -= 1
@@ -152,6 +149,7 @@ def main():
                 s.tx_timer -= 1
                 if s.tx_timer <= 0:
                     s.state = 'idle'
+                    medium.remove_symbol(chr(65+s.id))
 
 if __name__ == "__main__":
     main()
