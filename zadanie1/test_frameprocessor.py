@@ -9,7 +9,7 @@ ENCODED_FILE = 'test_encoded.txt'
 DECODED_FILE = 'test_decoded.txt'
 
 # Sample bit string (can be changed for more tests)
-BIT_STRING = '01111110111111000001111110000011111' * 2  # purposely includes many 1s for stuffing
+BIT_STRING = '01111110111111000001111110000011111' * 220  # purposely includes many 1s for stuffing
 
 # Write input file
 print(colored('\n--- INPUT DATA ---', 'cyan'))

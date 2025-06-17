@@ -10,7 +10,7 @@ import sys
 class FrameProcessor:
     def __init__(self):
         # Ustawienia długości ramki i CRC
-        self.FRAME_LENGTH = 64  # liczba bitów danych w ramce
+        self.FRAME_LENGTH = 150  # liczba bitów danych w ramce
         self.CRC_POLY = "100000111"  # wielomian CRC-8 (x^8 + x^2 + x + 1)
         self.CRC_LENGTH = len(self.CRC_POLY) - 1
         self.FLAG = "01111110"  # flaga początku/końca ramki

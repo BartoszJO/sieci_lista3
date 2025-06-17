@@ -3,7 +3,7 @@ import random
 from device import Device
 from wire import Wire
 
-WIRE_LENGTH = 40
+WIRE_LENGTH = 80
 TRANSMITTION_PROBABILITY = 0.005
 TICKS = 2000
 
@@ -13,10 +13,13 @@ OUTPUT_FILENAME = "./output.txt"
 def main() -> None:
     wire = Wire(WIRE_LENGTH)
     devices = [
-        Device("A", wire, 5),
-        Device("B", wire, 15),
-        Device("C", wire, 25),
-        Device("D", wire, 35),
+        Device("A", wire, 10),
+        Device("B", wire, 20),
+        Device("C", wire, 30),
+        Device("D", wire, 40),
+        Device("E", wire, 50),
+        Device("F", wire, 60),
+        Device("G", wire, 70),
     ]
 
     output_file = open(OUTPUT_FILENAME, "w")
