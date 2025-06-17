@@ -123,7 +123,7 @@ class FrameProcessor:
     def encode_file(self, input_file, output_file):
         """
         Koduje plik wejściowy do ramek z CRC, rozpychaniem bitów i flagami.
-        Zapisuje wynik do pliku wyjściowego (każda ramka w osobnej linii).
+        Zapisuje wynik do pliku wyjściowego jako jeden ciąg 0 i 1 (bez nowych linii).
         """
         try:
             with open(input_file, 'r', encoding='utf-8') as f:
@@ -141,14 +141,16 @@ class FrameProcessor:
                 frame = self.create_frame(chunk)
                 frames.append(frame)
             
-            # Zapisz ramki do pliku
+            # Połącz wszystkie ramki w jeden ciąg
+            output_bits = ''.join(frames)
+            
+            # Zapisz do pliku jako jeden ciąg 0 i 1
             with open(output_file, 'w', encoding='utf-8') as f:
-                for frame in frames:
-                    f.write(frame + '\n')
+                f.write(output_bits)
             
             print(f"Kodowanie zakończone. Utworzono {len(frames)} ramek.")
             print(f"Wynik zapisano do: {output_file}")
-            
+        
         except FileNotFoundError:
             print(f"Błąd: Nie można odnaleźć pliku '{input_file}'")
         except Exception as e:
@@ -186,42 +188,49 @@ class FrameProcessor:
     
     def decode_file(self, input_file, output_file):
         """
-        Dekoduje plik ramek: usuwa flagi, rozpychanie bitów, weryfikuje CRC.
+        Dekoduje plik ramek: wyszukuje ramki na podstawie flag, usuwa flagi, rozpychanie bitów, weryfikuje CRC.
         Zapisuje poprawne dane do pliku wyjściowego.
         """
         try:
             with open(input_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-            
+                bitstream = f.read().strip()
+
             decoded_data = ""
             valid_frames = 0
             total_frames = 0
-            
-            for line_num, line in enumerate(lines, 1):
-                frame = line.strip()
-                if not frame:
-                    continue
-                
+            flag = self.FLAG
+            flag_len = len(flag)
+            i = 0
+            frames_found = 0
+            # Szukaj ramek na podstawie flag
+            while i < len(bitstream):
+                # Szukaj początku ramki
+                start = bitstream.find(flag, i)
+                if start == -1:
+                    break
+                end = bitstream.find(flag, start + flag_len)
+                if end == -1:
+                    break
+                frame = bitstream[start:end+flag_len]
+                frames_found += 1
                 total_frames += 1
                 data, status = self.extract_frame_data(frame)
-                
                 if data is not None:
                     decoded_data += data
                     valid_frames += 1
-                    print(f"Ramka {line_num}: OK")
+                    print(f"Ramka {frames_found}: OK")
                 else:
-                    print(f"Ramka {line_num}: BŁĄD - {status}")
-            
+                    print(f"Ramka {frames_found}: BŁĄD - {status}")
+                i = end + flag_len
+
             if valid_frames > 0:
                 with open(output_file, 'w', encoding='utf-8') as f:
                     f.write(decoded_data)
-                
                 print(f"\nDekodowanie zakończone.")
                 print(f"Prawidłowych ramek: {valid_frames}/{total_frames}")
                 print(f"Wynik zapisano do: {output_file}")
             else:
                 print("Brak prawidłowych ramek do zdekodowania.")
-                
         except FileNotFoundError:
             print(f"Błąd: Nie można odnaleźć pliku '{input_file}'")
         except Exception as e:
