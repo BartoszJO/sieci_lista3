@@ -1,0 +1,100 @@
+Your request's header is:
+
+Connection: keep-alive
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.5
+Host: localhost:4321
+Referer: http://localhost:4321/terms
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0
+Priority: u=0, i
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Upgrade-Insecure-Requests: 1
+
+
+=============== WYJASNIENIE ==============
+
+Connection: keep-alive
+
+    Informuje serwer, że klient (np. przeglądarka) chce utrzymać połączenie otwarte i wykorzystać je ponownie dla kolejnych żądań (zamiast otwierać nowe TCP).
+
+    Przyspiesza ładowanie wielu zasobów (np. obrazków, CSS).
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+
+    Określa, jakie typy danych przeglądarka akceptuje w odpowiedzi.
+
+    text/html i application/xhtml+xml – strony internetowe.
+
+    q=0.9, q=0.8 to priorytety – im wyższe, tym bardziej preferowane.
+
+Accept-Encoding: gzip, deflate, br, zstd
+
+    Informuje, jakie kompresje treści klient akceptuje.
+
+    Serwer może odpowiedzieć np. w formacie gzip – a przeglądarka sama go rozpakowuje.
+
+Accept-Language: en-US,en;q=0.5
+
+    Określa preferowany język odpowiedzi.
+
+    en-US – amerykański angielski, en;q=0.5 – ogólny angielski z niższym priorytetem.
+
+Host: localhost:4321
+
+    Obowiązkowy w HTTP/1.1.
+
+    Określa nazwę hosta i port, do którego klient się łączy.
+
+    Dzięki temu serwer wie, do której „wirtualnej witryny” należy żądanie (np. w hostingu współdzielonym).
+
+Referer: http://localhost:4321/
+
+    Informuje, z jakiej strony klient trafił do obecnego adresu (/header).
+
+    Używane np. do statystyk, bezpieczeństwa (sprawdzanie źródła żądania).
+
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:139.0) Gecko/20100101 Firefox/139.0
+
+    Przedstawia klienta – w tym wypadku przeglądarkę Firefox na Ubuntu.
+
+    Serwer może używać tego do dostosowywania treści (np. responsywnych layoutów, zgodności).
+
+Priority: u=0, i
+
+    Używane w przeglądarkach (zwłaszcza Firefox) do określenia priorytetu żądania.
+
+    u=0 = użytkownik nie potrzebuje natychmiast; i = priorytet interaktywny (np. strona główna).
+
+Sec-Fetch-Dest: document
+
+    Mówi serwerowi, co klient zamierza zrobić z odpowiedzią.
+
+    document = przeglądarka chce wyświetlić jako główną stronę.
+
+Sec-Fetch-Mode: navigate
+
+    Pokazuje sposób, w jaki żądanie zostało zainicjowane.
+
+    navigate = standardowe przejście do strony (kliknięcie linku, wpisanie adresu).
+
+Sec-Fetch-Site: same-origin
+
+    Wskazuje relację między źródłem strony a żądanym zasobem.
+
+    same-origin = żądanie pochodzi z tego samego hosta (czyli localhost → localhost).
+
+Sec-Fetch-User: ?1
+
+    Informuje, że żądanie zostało wywołane bezpośrednio przez użytkownika (np. kliknięcie).
+
+    ?1 = prawda.
+
+Upgrade-Insecure-Requests: 1
+
+    Przeglądarka sugeruje, że preferuje wersję HTTPS, jeśli dostępna.
+
+    W twoim przypadku serwer jest HTTP, ale przeglądarka pokazuje gotowość przejścia na HTTPS.
