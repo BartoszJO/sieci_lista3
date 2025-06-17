@@ -1,32 +1,44 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-main.py - uruchamia zestaw testów dla symulacji CSMA/CD (csma_cd.py) z zadania 2.
-Każdy test uruchamia symulację z określoną liczbą stacji, długością łącza i liczbą kroków.
-Wyniki są wypisywane na konsolę.
-"""
-import subprocess
+import random
 
-# Funkcja uruchamia pojedynczy test z zadanymi parametrami
-def run_test(n_stations, length, steps):
-    print(f"\n=== Test: stacje={n_stations}, dlugosc={length}, kroki={steps} ===")
-    result = subprocess.run([
-        'python3', 'csma_cd.py', str(n_stations), str(length), str(steps)
-    ], capture_output=True, text=True)
-    print(result.stdout)
-    if result.stderr:
-        print("BŁĄD:", result.stderr)
+from device import Device
+from wire import Wire
 
-# Główna funkcja uruchamiająca wszystkie testy
-def main():
-    test_cases = [
-        (2, 10, 10),   # 2 stacje, długość 10, 10 kroków
-        (3, 20, 15),   # 3 stacje, długość 20, 15 kroków
-        (4, 30, 20),   # 4 stacje, długość 30, 20 kroków
-        (5, 15, 12),   # 5 stacji, długość 15, 12 kroków
+WIRE_LENGTH = 80
+TRANSMITTION_PROBABILITY = 0.005
+TICKS = 2000
+
+OUTPUT_FILENAME = "./output.txt"
+
+
+def main() -> None:
+    wire = Wire(WIRE_LENGTH)
+    devices = [
+        Device("A", wire, 10),
+        Device("B", wire, 20),
+        Device("C", wire, 30),
+        Device("D", wire, 40),
+        Device("E", wire, 50),
+        Device("F", wire, 60),
+        Device("G", wire, 70),
     ]
-    for n, l, s in test_cases:
-        run_test(n, l, s)
+
+    output_file = open(OUTPUT_FILENAME, "w")
+
+    for _ in range(TICKS):
+        for device in devices:
+            if random.random() < TRANSMITTION_PROBABILITY:
+                device.send_packet()
+            device.tick()
+        wire.tick()
+        output_file.write(f"{wire}\n")
+
+    for device in devices:
+        output_file.write(
+            f"Device {device._symbol}: {device.successfull_transmissions} successfull transmissions, {device.failed_transmissions} failed transmissions.\n"
+        )
+
+    output_file.close()
+
 
 if __name__ == "__main__":
     main()
