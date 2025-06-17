@@ -212,7 +212,9 @@ class FrameProcessor:
                 frame = bitstream[start:end+flag_len]
                 # Pomijaj puste ramki
                 if len(frame) <= 2 * flag_len:
-                    i = end + flag_len
+                    i = bitstream.find(flag, start + 1)
+                    if i == -1:
+                        break
                     continue
                 frames_found += 1
                 total_frames += 1
@@ -223,7 +225,10 @@ class FrameProcessor:
                     print(f"Ramka {frames_found}: OK")
                 else:
                     print(f"Ramka {frames_found}: BŁĄD - {status}")
-                i = end + flag_len  # przesuwaj wskaźnik na koniec flagi końcowej
+                # Always move to the next flag after the current start, to resync if opening flag is broken
+                i = bitstream.find(flag, start + 1)
+                if i == -1:
+                    break
 
             if valid_frames > 0:
                 with open(output_file, 'w', encoding='utf-8') as f:
@@ -237,7 +242,8 @@ class FrameProcessor:
             print(f"Błąd: Nie można odnaleźć pliku '{input_file}'")
         except Exception as e:
             print(f"Błąd podczas dekodowania: {e}")
-# ...existing code...
+
+
 if __name__ == "__main__":
     # Obsługa argumentów wiersza poleceń
     if len(sys.argv) < 4:
